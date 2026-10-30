@@ -1,0 +1,91 @@
+# Git hooks. Based on agents/presets/hooks/assets/pre-commit-config.yaml.
+#
+# After a clone:
+#
+#   git config --local core.autocrlf false     # or mixed-line-ending loops forever
+#   prek install
+#   prek run --all-files                       # builds environments before first commit
+#
+# Verify the file is sane after editing:
+#   prek run --hook-stage manual --all-files
+
+minimum_pre_commit_version: "4.0.0"
+default_install_hook_types: [pre-commit, commit-msg, pre-push]
+default_stages: [pre-commit]
+
+repos:
+# ── CORE ──────────────────────────────────────────────────────────────────────
+
+  - repo: meta
+    hooks:
+      - id: check-hooks-apply
+        stages: [manual]
+      - id: check-useless-excludes
+        stages: [manual]
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      # Fixes the file, then fails the commit. Run `git add` and commit again.
+      # The profile README breaks its lines with two trailing spaces.
+      - id: trailing-whitespace
+        args: [--markdown-linebreak-ext=md]
+      - id: end-of-file-fixer
+      - id: mixed-line-ending
+        args: [--fix=lf]
+      - id: fix-byte-order-marker
+      # Refuses only, changes nothing.
+      - id: check-yaml
+      - id: check-json
+      - id: check-merge-conflict
+      - id: check-added-large-files
+        args: [--maxkb=1024]
+      - id: check-case-conflict
+      - id: check-illegal-windows-names
+      - id: detect-private-key
+      - id: forbid-submodules
+      - id: destroyed-symlinks
+
+  - repo: https://github.com/pre-commit/pygrep-hooks
+    rev: v1.10.0
+    hooks:
+      # U+FFFD is what a botched encoding leaves behind.
+      - id: text-unicode-replacement-char
+
+  - repo: https://github.com/crate-ci/typos
+    rev: v1.49.0
+    hooks:
+      # Fixes typos on its own. Its dictionary is English only.
+      - id: typos
+        exclude: \.md$
+
+  # It rejects `Revert "..."`, which git writes itself. After git revert,
+  # rewrite the subject as revert(scope): ... — `revert` is on the type list.
+  - repo: https://github.com/compilerla/conventional-pre-commit
+    rev: v4.4.0
+    hooks:
+      - id: conventional-pre-commit
+        stages: [commit-msg]
+        args:
+          - --force-scope
+          - --scopes=repo
+          - feat
+          - fix
+          - chore
+          - docs
+          - refactor
+          - test
+          - perf
+          - style
+          - ci
+          - build
+          - revert
+
+# ── OWN STANDARDS ─────────────────────────────────────────────────────────────
+
+  - repo: https://github.com/MattyMroz/agents
+    rev: hooks-v1.1.0 # or newer: prek autoupdate
+    hooks:
+      # Commit body: summary + Validation block bound to recorded runs.
+      # Format and the mm-validate workflow: presets/hooks/references/commit-message.md
+      - id: commit-validation
